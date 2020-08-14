@@ -6,21 +6,20 @@ Created on Thu Aug 13 23:34:29 2020
 """
 
 
-
-
-"""将数据从.scv文件中读取出来"""
-
+"""
+数据可视化第一部分：将数据从.scv文件中读取出来
+"""
 
 
 # 导入数据分析库pandas
 import pandas as pd
 
-# 从本地导入数据，这里用的是相对路径，如果你的程序和文件不在同一个文件夹里请用绝对路径
+# 从本地导入测试数据文件data2.csv，该文件由tushare库编程产生，这里用的是相对路径，如果你的程序和文件不在同一个文件夹里请用绝对路径
 df = pd.read_csv('data2.csv')
 # 查看数据
 df.head()
 
-# 剔除缺失数据
+# 剔除缺失数据，实际上data2.csv文件中数据在产生时已经得到了处理
 df = df.dropna()
 df.head()
 
@@ -28,7 +27,6 @@ df.head()
 df = df.reset_index().drop(columns='index')
 df.head()
 
-print(df)
 # 取出时间
 raw_time = pd.to_datetime(df.pop('date'), format='%Y/%m/%d %H:%M')
 
@@ -37,10 +35,14 @@ raw_time = pd.to_datetime(df.pop('date'), format='%Y/%m/%d %H:%M')
 
 
 
-"""将数据进行可视化处理"""
+"""
+数据可视化第二部分：将数据进行可视化处理
+"""
 
 from matplotlib import pyplot as plt
 import seaborn as sns
+
+##绘制如下曲线图和表格
 
 # 折线图：股票走势
 plt.plot(raw_time, df['close'])
@@ -50,14 +52,13 @@ plt.title('Trend')
 plt.show()
 
 # 散点图：成交量和股价
-
 plt.scatter(df['volume'], df['close'])
 plt.xlabel('Volume')
 plt.ylabel('Share Price')
 plt.title('Volume & Share Price')
 plt.show()
 
-#切片取前300组数据
+#切片取前300组数据（实际上tushare输出只有350组数据）
 plt.scatter(df['volume'][:300], df['close'][:300]) 
 plt.xlabel('Volume')
 plt.ylabel('Share Price')
@@ -89,12 +90,12 @@ sns.heatmap(correlation, annot=True)
 # 注意：tushare需要注册方可使用，注册后初始积分100分，完善个人信息后共120分，才能使用daily()这个api。
 # 尽管tushare的绝大多数api我们都没有使用权限，但daily()和cctv_news()应当可以满足本次训练营的使用。
 # 初次使用需要初始化一次
-"""token码有待更新"""
+"""此处token码由助教Sensei赞助"""
 
 import tushare as ts
 
 token = 'c3a77cb99733084fb6d9bfd7a7fb416b2155b7bdade46c78e752e730'  # token码
-ts.set_token(token)  # 初始化，之后就不需要了
+ts.set_token(token)  # 初始化，只需要使用一次
 
 pro = ts.pro_api()
 
@@ -141,7 +142,9 @@ sz4.describe()
 
 
 
-"""进阶处理-绘制K线图"""
+"""
+数据可视化处理第三部分：进阶处理-绘制K线图
+"""
 # 导入必要库
 import pandas as pd  # 数据处理
 import datetime  # 时间格式处理
@@ -151,9 +154,9 @@ from mplfinance.original_flavor import candlestick_ochl  # 绘制k线图
 from matplotlib import ticker as mticker  # 刻度处理
 from matplotlib import dates as mdates  # 时间格式处理
 
-data = pd.read_csv('lq_test.csv')
+data = pd.read_csv('data2.csv')
 data = data.dropna().reset_index().drop(columns='index')
-raw_time = data.pop('Unnamed: 0')
+raw_time = data.pop('date')
 
 #把日期和时间分割开来，把时间格式改成方便比较的格式
 date_times = []
@@ -175,22 +178,24 @@ for date_time in date_times:
 # 把分离并调整格式的日期和时间储存在data中
 data['date'] = dates
 data['time'] = times
-data_ = data.copy()  # 为避免污染源数据，将数据拷贝至新的DataFrame中进行处理，copy()方法默认深拷贝，之后我们还会提到这个概念
+data_ = data.copy()  # 为避免污染源数据，将数据拷贝至新的DataFrame中进行处理，copy()方法默认深拷贝，之后我们还会提到这个概念，太强了Sensei！
 
-#把非开盘时间（上午9：30-下午15：00之外的时间）剔除掉
+#把非开盘时间（上午9：30-下午15：00之外的时间）剔除掉，但实际上tushare输出的数据data2.csv已经剔除掉了非开盘时间的数据
 data_.drop(data_[(data_.time < '09:31:00') | (data_.time > '15:00:00')].index, inplace=True)  # 把非开盘时间通过字符串比较大小去除
 data_ = data_.reset_index().drop(columns='index')
 data_.head()
 
 #把数据提取出来
-#每天开盘240分钟，设置步长为240
-Open = data_['open'][0::240].reset_index().drop(columns='index')
-Close = data_['close'][239::240].reset_index().drop(columns='index')
+#每天开盘240分钟，每5分钟记录一次数据，设置步长为48
+Open = data_['open'][1::48].reset_index().drop(columns='index')
+Close = data_['close'][47::48].reset_index().drop(columns='index')
+
 
 #将数据分类，取出最大值、最小值
 High = data_[['high', 'date']].groupby('date').max().reset_index()
 Low = data_[['low', 'date']].groupby('date').min().reset_index()
 Dates = High['date']
+
 
 #对时间格式进行转换以满足candlestick_ochl()要求
 plot_dates = []
@@ -212,26 +217,18 @@ candlestick_ochl(ax, plot_mat.values)
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
 plt.show()
 
-#取出局部图像
-fig, ax = plt.subplots()
-candlestick_ochl(ax, plot_mat[100:160].values)
-ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-plt.show()
-
-
-#绘制均值，形成MA
-mov_avg_ten = plot_mat['close'].rolling(window=10).mean() # 计算每10天收盘价的均值，每次向下滚动1天
-mov_avg_thirty = plot_mat['close'].rolling(window=30).mean()  # 计算每30天收盘价的均值，每次向下滚动1天
-
-
 ##图像细节处理
 fig = plt.figure(facecolor='#07000d', figsize=(15, 10))  # 设置画布背景颜色与画布大小
 ax = plt.subplot2grid((6, 4), (1, 0), rowspan=4, colspan=4, facecolor='#07000d')  
 
 
+#绘制均值，形成MA
+mov_avg_ten = plot_mat['close'].rolling(window=1).mean() # 计算每10天收盘价的均值，每次向下滚动1天
+mov_avg_thirty = plot_mat['close'].rolling(window=3).mean()  # 计算每30天收盘价的均值，每次向下滚动1天
+
 #绘制10日与30日均线
-ax.plot(plot_mat.time[100:160].values, mov_avg_ten[100:160], '#e1edf9', label='10days', linewidth=1.5)  
-ax.plot(plot_mat.time[100:160].values, mov_avg_thirty[100:160], '#4ee6fd', label='10days', linewidth=1.5)
+ax.plot(plot_mat.time[0:48].values, mov_avg_ten[0:48], '#e1edf9', label='10days', linewidth=1.5)  
+ax.plot(plot_mat.time[0:48].values, mov_avg_thirty[0:48], '#4ee6fd', label='10days', linewidth=1.5)
 
 
 '''
@@ -241,10 +238,10 @@ shape设置网格布局，(6, 4)即6行4列，location设置起始画图位置�
 
 这里k线图从第2行，第1列起画，占4行4列
 
-之所以设置6行，是因为还有两个子图分别在上下(第1行和第6行)，可以见成品图
+之所以设置6行，是因为还有两个子图RSI曲线和MACD曲线分别在上下(第1行和第6行)
 
 '''
-candlestick_ochl(ax, plot_mat[100:160].values, width=0.6, colorup='#ff1717', colordown='#53c156')  # 设置线宽与涨跌颜色
+candlestick_ochl(ax, plot_mat[0:48].values, width=0.6, colorup='#ff1717', colordown='#53c156')  # 设置线宽与涨跌颜色
 ax.grid(True, color='w')  # 设置网格及其颜色(白色)
 ax.xaxis.set_major_locator(mticker.MaxNLocator(10))  # 设置横轴刻度，MaxNLocator确定最多显示多少个刻度
 ax.yaxis.set_major_locator(mticker.MaxNLocator())  # 设置纵轴刻度，不填参数则MaxNLocator自动
@@ -258,15 +255,17 @@ ax.tick_params(axis='y', colors='w')  # 设置y轴刻度颜色
 ax.tick_params(axis='x', colors='w')  # 设置x轴刻度颜色
 plt.ylabel('Stock Price and Volume', color='w')  # y轴标签
 
+
 #绘制蓝色的成交量线
 Volume = data_[['date', 'volume']].groupby(by='date').sum().reset_index()
+print(Volume)
 
 ##绘制成交量图
 ax_ = ax.twinx()  # 共享绘图区域
-ax_.fill_between(plot_mat.time[100:160].values, 0, Volume.volume[100:160].values,
+ax_.fill_between(plot_mat.time[0:48].values, 0, Volume.volume[0:48].values,
                 facecolor='#00ffe8', alpha=0.4)  # 把[0, volume]之间空白填充颜色，alpha设置透明度
 ax_.grid(False)  # 不显示成交量的网格
-ax_.set_ylim(0, 4*Volume.volume.values[100:160].max())  # 成交量的y轴范围，为使成交量线处在较下方，设置刻度最大值为成交量最大值的四倍
+ax_.set_ylim(0, 4*Volume.volume.values[0:48].max())  # 成交量的y轴范围，为使成交量线处在较下方，设置刻度最大值为成交量最大值的四倍
 ax_.spines['bottom'].set_color('#5998ff')
 ax_.spines['top'].set_color('#5998ff')
 ax_.spines['left'].set_color('#5998ff')
@@ -275,7 +274,7 @@ ax_.tick_params(axis='y', colors='w')
 ax_.tick_params(axis='x', colors='w')
 
 #绘制RSI曲线
-def cal_rsi(df0, period=6):  # 默认周期为6日
+def cal_rsi(df0, period=2):  # 默认周期为2日（随意设置）
     df0['diff'] = df0['close'] - df0['close'].shift(1)  # 用diff储存两天收盘价的差
     df0['diff'].fillna(0, inplace=True)  # 空值填充为0
     df0['up'] = df0['diff']  # diff赋值给up
@@ -296,13 +295,13 @@ ax0 = plt.subplot2grid((6, 4), (0, 0), sharex=ax, rowspan=1, colspan=4, facecolo
 col_rsi = '#c1f9f7'  # RSI曲线的颜色
 col_pos = '#8f2020'  # 上辅助线及其填充色
 col_neg = '#386d13'  # 下辅助线及其填充色
-ax0.plot(plot_mat.time[100:160].values, plot_mat.rsi[100:160].values, col_rsi, linewidth=1.5)  # RSI曲线及其颜色，线宽
+ax0.plot(plot_mat.time[0:48].values, plot_mat.rsi[0:48].values, col_rsi, linewidth=1.5)  # RSI曲线及其颜色，线宽
 ax0.axhline(70, color=col_pos)  # 上辅助线及其颜色
 ax0.axhline(30, color=col_neg)  # 下辅助线及其颜色
-ax0.fill_between(plot_mat.time[100:160].values, plot_mat.rsi[100:160].values, 70, where=(plot_mat.rsi.values[100:160] >= 70),
-                 facecolors=col_pos)  # 把RSI曲线大于等于70的部分填充为红色
-ax0.fill_between(plot_mat.time[100:160].values, plot_mat.rsi[100:160].values, 30, where=(plot_mat.rsi.values[100:160] <= 30),
-                 facecolors=col_neg)  # 把RSI曲线小于等于30的部分填充为绿色
+ax0.fill_between(plot_mat.time[0:48].values, plot_mat.rsi[0:48].values, 70, where=(plot_mat.rsi.values[0:48] >= 70),
+                 facecolors=col_pos)  # 把RSI曲线大于等于70的部分填充为红色（有可能有一部分不显示，属正常现象）
+ax0.fill_between(plot_mat.time[0:48].values, plot_mat.rsi[0:48].values, 30, where=(plot_mat.rsi.values[0:48] <= 30),
+                 facecolors=col_neg)  # 把RSI曲线小于等于30的部分填充为绿色（有可能有一部分不显示，属正常现象）
 ax0.set_yticks([30, 70])  # 设置辅助线的刻度
 ax0.spines['bottom'].set_color("#5998ff")
 ax0.spines['top'].set_color("#5998ff")
@@ -345,9 +344,9 @@ plot_mat = cal_macd(plot_mat)
 
 ##绘制MACD曲线
 ax1 = plt.subplot2grid((6, 4), (5, 0), sharex=ax, rowspan=1, colspan=4, facecolor='#07000d') # 第6行第1列起，占1行4列
-ax1.plot(plot_mat.time[100:160].values, plot_mat.macd[100:160].values, color='#4ee6fd', linewidth=2)  # MACD线
-ax1.plot(plot_mat.time[100:160].values, plot_mat.dea9[100:160].values, color='#e1edf9', linewidth=1)  # DEA线
-ax1.fill_between(plot_mat.time[100:160].values, plot_mat.macd[100:160].values-plot_mat.dea9[100:160].values, 0,
+ax1.plot(plot_mat.time[0:48].values, plot_mat.macd[0:48].values, color='#4ee6fd', linewidth=2)  # MACD线
+ax1.plot(plot_mat.time[0:48].values, plot_mat.dea9[0:48].values, color='#e1edf9', linewidth=1)  # DEA线
+ax1.fill_between(plot_mat.time[0:48].values, plot_mat.macd[0:48].values-plot_mat.dea9[0:48].values, 0,
                  alpha=0.5, facecolors='#00ffe8')  # 填充差值
 ax1.yaxis.set_major_locator(mticker.MaxNLocator())  # 设置纵坐标
 ax1.spines['bottom'].set_color('#5998ff')
