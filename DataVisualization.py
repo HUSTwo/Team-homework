@@ -10,11 +10,13 @@ Created on Thu Aug 13 23:34:29 2020
 
 """将数据从.scv文件中读取出来"""
 
+
+
 # 导入数据分析库pandas
 import pandas as pd
 
 # 从本地导入数据，这里用的是相对路径，如果你的程序和文件不在同一个文件夹里请用绝对路径
-df = pd.read_csv('lq_test.csv')
+df = pd.read_csv('data2.csv')
 # 查看数据
 df.head()
 
@@ -26,8 +28,9 @@ df.head()
 df = df.reset_index().drop(columns='index')
 df.head()
 
+print(df)
 # 取出时间
-raw_time = pd.to_datetime(df.pop('Unnamed: 0'), format='%Y/%m/%d %H:%M')
+raw_time = pd.to_datetime(df.pop('date'), format='%Y/%m/%d %H:%M')
 
 
 
@@ -62,17 +65,19 @@ plt.title('Volume & Share Price')
 plt.show()
 
 # 涨跌幅度
-daily_return = df['close'][0::240].pct_change().dropna()
-plt.plot(raw_time[0::240][:40], daily_return[:40])
+daily_return= df['close'].pct_change().dropna()
+plt.plot(raw_time[1:], daily_return)   
 plt.xlabel('Time')
 plt.ylabel('Rise and Fall')
 plt.show()
 
 # 直方图
 plt.hist(daily_return)
+plt.show()
 
 # 核密度估计
 sns.kdeplot(daily_return)
+plt.show()
 
 # 相关系数矩阵
 correlation = df.corr()
@@ -88,7 +93,7 @@ sns.heatmap(correlation, annot=True)
 
 import tushare as ts
 
-token = 'c3a77cb99733084fb6d9bfd7a7fb416b2155b7bdade46c78e752e730'  # 我自己注册的token，大家最好还是自己注册一个，数据调用有上限
+token = 'c3a77cb99733084fb6d9bfd7a7fb416b2155b7bdade46c78e752e730'  # token码
 ts.set_token(token)  # 初始化，之后就不需要了
 
 pro = ts.pro_api()
