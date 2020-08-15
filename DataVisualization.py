@@ -7,6 +7,12 @@ ts.set_token(token)
 
 pro = ts.pro_api()
 
+df1 = ts.get_hist_data('600000', ktype='5')
+df0=df1[['open','close','high','low','volume']]
+df0.head(10)
+print(df0)
+df0.to_csv('data2.csv')
+
 df = pro.daily(ts_code='600000.SH, 600010.SH, 600015.SH', start_date='20200301', end_date='20200801')
 df.head(10)
 
