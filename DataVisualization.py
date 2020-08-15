@@ -1,7 +1,20 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Aug 13 23:34:29 2020
+
+@author: 孟治宇 吴嘉杰
+"""
+
+
+"""
+收集采集数据并对数据做简要分析
+"""
+
 #收集数据
 import pandas as pd
 import tushare as ts
 
+#此处token码借用助教的，即将停止更新😀
 token = 'c3a77cb99733084fb6d9bfd7a7fb416b2155b7bdade46c78e752e730' 
 ts.set_token(token)
 
@@ -26,30 +39,30 @@ sh0.head()
 
 #开始画图：
 import matplotlib.pyplot as plt
-fig, ax = plt.subplots()
+fig, ax = plt.subplots()#初始化
+#对600000.SH、600010.SH、600015.SH三只股票的时间和代码进行分类
 sh0.plot(ax=ax, y='close', label='600000')
 sh1.plot(ax=ax, y='close', label='600010')
 sh2.plot(ax=ax, y='close', label='600015')
 
+#绘制收盘价折线图
 plt.legend(loc='upper left')
 plt.show()
 
-
+#绘制平均股价柱状图
 mean_share_list = [sh0['close'].mean(), sh1['close'].mean(), sh2['close'].mean()]
 mean_share_series = pd.Series(mean_share_list, index=['600000', '600010', '600015'])
 mean_share_series.plot(kind='bar')
 plt.xticks(rotation=360)
 plt.show()
 
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Aug 13 23:34:29 2020
 
-@author: U201812776
-"""
+
+
 
 
 """
+以下是对数据进行可视化分析：
 数据可视化第一部分：将数据从.scv文件中读取出来
 """
 
@@ -57,7 +70,7 @@ Created on Thu Aug 13 23:34:29 2020
 # 导入数据分析库pandas
 import pandas as pd
 
-# 从本地导入测试数据文件data2.csv，该文件由tushare库编程产生，这里用的是相对路径，如果你的程序和文件不在同一个文件夹里请用绝对路径
+# 从本地导入测试数据文件data2.csv，该文件由tushare库编程产生，这里用的是相对路径，如果程序和文件不在同一个文件夹里要用绝对路径
 df = pd.read_csv('data2.csv')
 # 查看数据
 df.head()
@@ -131,9 +144,8 @@ sns.heatmap(correlation, annot=True)
 
 
 # 注意：tushare需要注册方可使用，注册后初始积分100分，完善个人信息后共120分，才能使用daily()这个api。
-# 尽管tushare的绝大多数api我们都没有使用权限，但daily()和cctv_news()应当可以满足本次训练营的使用。
-# 初次使用需要初始化一次
-"""此处token码由助教Sensei赞助"""
+#由于第一部分已经做过了收盘价折线图和平均股价柱状图的分析，这一部分就只进行箱型图的分析。
+"""此处token码由助教Sensei赞助😀，即将停止更新"""
 
 import tushare as ts
 
@@ -145,7 +157,7 @@ pro = ts.pro_api()
 df = pro.daily(ts_code='000001.SZ, 000002.SZ, 000004.SZ, 000005.SZ, 000006.SZ', start_date='20200201', end_date='20200601') #  000003.SZ已经退市
 df.head(10)
 
-#对几只股票的时间和序号进行分类
+#对000001.SZ、000002.SZ、000004.SZ、000005.SZ、000006.SZ五只股票的时间和序号进行分类
 sz1 = df[::5].set_index('trade_date')
 sz2 = df[1::5].set_index('trade_date')
 sz4 = df[2::5].set_index('trade_date')
@@ -154,33 +166,14 @@ sz6 = df[4::5].set_index('trade_date')
 
 sz1.head()
 
-#把股票都分出来后开始画图
-fig, ax = plt.subplots()
-
-sz1.plot(ax=ax, y='close', label='000001')
-sz2.plot(ax=ax, y='close', label='000002')
-sz4.plot(ax=ax, y='close', label='000004')
-sz5.plot(ax=ax, y='close', label='000005')
-sz6.plot(ax=ax, y='close', label='000006')
-
-plt.legend(loc='upper left')
-
-#绘制柱状图查看平均股价
-mean_share_list = [sz1['close'].mean(), sz2['close'].mean(), sz4['close'].mean(), sz5['close'].mean(), sz6['close'].mean()]
-mean_share_series = pd.Series(mean_share_list, index=['000001', '000002', '000004', '000005', '000006'])
-mean_share_series.plot(kind='bar')
-plt.xticks(rotation=360)  # 这里如果不加rotation默认是90°
-
 #绘制箱型图分析数据
 closedf = pd.DataFrame()
-closedf = pd.concat([closedf, sz1['close'], sz2['close'], sz4['close'], sz5['close'], sz6['close']], axis=1)  # 横向拼接数据(axis=1)
+closedf = pd.concat([closedf, sz1['close'], sz2['close'],sz4['close'],sz5['close'],sz6['close']], axis=1)  # 横向拼接数据(axis=1)
 closedf.columns = ['000001', '000002', '000004', '000005', '000006']
 closedf.plot(kind='box')
 
 #使用describe()方法对数据均值、分位数、标准差、最值进行初步分析
 sz4.describe()
-
-
 
 
 
@@ -316,8 +309,8 @@ ax_.spines['right'].set_color('#5998ff')
 ax_.tick_params(axis='y', colors='w')
 ax_.tick_params(axis='x', colors='w')
 
-#绘制RSI曲线
-def cal_rsi(df0, period=2):  # 默认周期为2日（随意设置）
+#绘制RSI曲线数据处理
+def cal_rsi(df0, period=2):  # 默认周期为2日（由于数据较少就设置为2日）
     df0['diff'] = df0['close'] - df0['close'].shift(1)  # 用diff储存两天收盘价的差
     df0['diff'].fillna(0, inplace=True)  # 空值填充为0
     df0['up'] = df0['diff']  # diff赋值给up
@@ -355,7 +348,7 @@ ax0.tick_params(axis='y', colors='w')
 plt.ylabel('RSI', color='w')
 
 
-#绘制MACD曲线
+#绘制MACD曲线数据处理
 def cal_ema(df0, period, is_dea=False):  # DEA与EMA的计算方式相同，封装在同一个函数中，用is_dea来确认是否是DEA
     for i in range(len(df0)):
         if not is_dea:
