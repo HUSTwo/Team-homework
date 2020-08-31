@@ -143,7 +143,6 @@ print(correlation)
 sns.heatmap(correlation, annot=True)
 
 
-# 注意：tushare需要注册方可使用，注册后初始积分100分，完善个人信息后共120分，才能使用daily()这个api。
 #由于第一部分已经做过了收盘价折线图和平均股价柱状图的分析，这一部分就只进行箱型图的分析。
 """此处token码由助教Sensei赞助😀，即将停止更新"""
 
